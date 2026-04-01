@@ -1,0 +1,141 @@
+.header {
+    height: 112px;
+    background: rgba(137, 103, 194, 0.44);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.inner {
+    max-width: 1500px;
+    height: 100%;
+    margin: 0 15px;
+    padding: 0 32px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.logo {
+    font-family: 'SovMod', sans-serif;
+    font-size: 64px;
+    font-weight: normal;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+}
+
+.logo:hover {
+    color: #fff;
+    text-decoration: none;
+    opacity: 0.85;
+}
+
+.nav {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+}
+
+.nav a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.nav a:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ── profile ── */
+
+.profileWrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profileBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.profileIcon {
+    width: 52px;
+    height: 52px;
+    transition: opacity 0.2s;
+}
+
+.profileBtn:hover .profileIcon {
+    opacity: 0.85;
+}
+
+/* ── dropdown ── */
+
+.dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(137, 103, 194, 0.2);
+    min-width: 200px;
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdownEmail {
+    padding: 4px 16px 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    word-break: break-all;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 0 8px;
+}
+
+.dropdownItem {
+    padding: 9px 16px;
+    font-size: 14px;
+    color: var(--text);
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.dropdownItem:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.dropdownLogout {
+    margin: 4px 8px 0;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--error);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.dropdownLogout:hover {
+    background: #fee2e2;
+}
