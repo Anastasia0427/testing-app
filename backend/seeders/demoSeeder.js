@@ -1,4 +1,4 @@
-const { User, Role, Test, Question, AnswerOption, QuestionType } = require('../models');
+const { User, Role, Test, Question, AnswerOption, QuestionType, Assignment } = require('../models');
 
 const seedDemo = async () => {
     // находим роли
@@ -77,6 +77,17 @@ const seedDemo = async () => {
         question_text: 'Напишите SQL-запрос, который выбирает все строки из таблицы "students".',
         question_type: textType.type_id,
         points: 3
+    });
+
+    // назначаем тест студенту
+    const [student] = await User.findOrCreate({
+        where: { email: 'student@demo.com' },
+        defaults: { password: 'demo1234', role_id: studentRole.role_id }
+    });
+
+    await Assignment.findOrCreate({
+        where: { student_id: student.user_id, test_id: test.test_id },
+        defaults: { student_id: student.user_id, test_id: test.test_id }
     });
 
     console.log(`Demo-тест создан: "${test.title}" (teacher: teacher@demo.com / student: student@demo.com, пароль: demo1234)`);

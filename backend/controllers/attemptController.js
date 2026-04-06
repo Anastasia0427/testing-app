@@ -1,4 +1,4 @@
-const { Assignment, Attempt, Test, Question, AnswerOption, UserSelection } = require('../models');
+const { Assignment, Attempt, Test, Question, UserSelection } = require('../models');
 
 // GET /api/attempts/assignments — назначенные студенту тесты
 const getMyAssignments = async (req, res) => {
@@ -84,25 +84,39 @@ const submitAttempt = async (req, res) => {
     // считаем баллы
     const questions = await Question.findAll({
         where: { test_id: attempt.assignment.test_id },
-        include: [{ association: 'options' }]
+        include: [{ association: 'options' }, { association: 'type' }]
     });
 
     let totalPoints = 0;
     let earnedPoints = 0;
 
     for (const question of questions) {
+        // text-вопросы не участвуют в автоподсчёте
+        if (question.type?.type === 'text') continue;
+
         totalPoints += question.points || 1;
 
         const userAnswer = answers.find(a => a.question_id === question.question_id);
         if (!userAnswer) continue;
 
-        if (userAnswer.option_id) {
+        if (question.type?.type === 'multiple_choice' && userAnswer.answer_text) {
+            // парсим JSON с выбранными вариантами
+            let selectedIds = [];
+            try { selectedIds = JSON.parse(userAnswer.answer_text); } catch { selectedIds = []; }
+
+            const correctIds = question.options.filter(o => o.is_correct).map(o => o.option_id);
+            const allCorrectSelected = correctIds.every(id => selectedIds.includes(id));
+            const noWrongSelected = selectedIds.every(id => correctIds.includes(id));
+
+            if (allCorrectSelected && noWrongSelected) {
+                earnedPoints += question.points || 1;
+            }
+        } else if (userAnswer.option_id) {
             const option = question.options.find(o => o.option_id === userAnswer.option_id);
             if (option && option.is_correct) {
                 earnedPoints += question.points || 1;
             }
         }
-        // text-ответы пока не проверяются автоматически
     }
 
     const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
@@ -128,7 +142,10 @@ const getAttempt = async (req, res) => {
             },
             {
                 association: 'selections',
-                include: [{ association: 'question' }, { association: 'selected_option' }]
+                include: [
+                    { association: 'question', include: [{ association: 'type' }, { association: 'options' }] },
+                    { association: 'selected_option' }
+                ]
             }
         ]
     });

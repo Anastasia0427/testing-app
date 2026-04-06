@@ -1,0 +1,169 @@
+.page {
+    max-width: 780px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ── профиль ── */
+.card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(139, 107, 196, 0.10);
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.email {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.role {
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--primary-light);
+    padding: 2px 10px;
+    border-radius: 20px;
+    width: fit-content;
+}
+
+/* ── статистика ── */
+.stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.statCard {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(139, 107, 196, 0.08);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 120px;
+}
+
+.statChart {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.statChart > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.statValue {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.statLabel {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ── история ── */
+.history {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(139, 107, 196, 0.10);
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.historyTitle {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.testRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.testRow:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.testInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.testName {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.testMeta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.testRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.bestScore {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.scorePassed { color: var(--success); }
+.scoreFailed { color: var(--error); }
+
+.noScore {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.hint {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 20px 0;
+}
