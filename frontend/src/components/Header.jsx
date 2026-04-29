@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import profileIcon from '../assets/icons/profile_icon.svg';
+import NotificationBell from './NotificationBell';
 import styles from './Header.module.css';
 
 const Header = () => {
@@ -48,6 +49,8 @@ const Header = () => {
                     )}
                 </nav>
 
+                <NotificationBell />
+
                 <div className={styles.profileWrapper} ref={dropdownRef}>
                     <button className={styles.profileBtn} onClick={() => setOpen(v => !v)}>
                         <img src={profileIcon} alt="Профиль" className={styles.profileIcon} />
@@ -57,15 +60,13 @@ const Header = () => {
                         <div className={styles.dropdown}>
                             <p className={styles.dropdownEmail}>{user?.email}</p>
                             <hr className={styles.divider} />
-                            {!isTeacher && (
-                                <Link
-                                    to="/student/profile"
-                                    className={styles.dropdownItem}
-                                    onClick={() => setOpen(false)}
-                                >
-                                    Мой профиль
-                                </Link>
-                            )}
+                            <Link
+                                to={isTeacher ? '/teacher/profile' : '/student/profile'}
+                                className={styles.dropdownItem}
+                                onClick={() => setOpen(false)}
+                            >
+                                Мой профиль
+                            </Link>
                             <button className={styles.dropdownLogout} onClick={handleLogout}>
                                 Выйти
                             </button>

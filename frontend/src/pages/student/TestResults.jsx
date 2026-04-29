@@ -6,7 +6,7 @@ import { getAttempt } from '../../api/attempts';
 import styles from './TestResults.module.css';
 
 const TestResults = () => {
-    const { attemptId } = useParams();
+    const { id: testId, attemptId } = useParams();
     const navigate = useNavigate();
     const [attempt, setAttempt] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -29,27 +29,30 @@ const TestResults = () => {
     const isMultiChoice = (s) => s.question?.type?.type === 'multiple_choice';
     const isTextQuestion = (s) => s.question?.type?.type === 'text';
 
+    const getMultiState = (s) => {
+        if (!s.answer_text) return 'unanswered';
+        let ids = [];
+        try { ids = JSON.parse(s.answer_text); } catch { return 'unanswered'; }
+        if (ids.length === 0) return 'unanswered';
+        const correctIds = s.question?.options?.filter(o => o.is_correct).map(o => o.option_id) ?? [];
+        const noWrong = ids.every(id => correctIds.includes(id));
+        if (!noWrong) return 'incorrect';
+        const allCorrect = correctIds.every(id => ids.includes(id));
+        return allCorrect ? 'correct' : 'partial';
+    };
+
     const correct = selections.filter(s => {
         if (isTextQuestion(s)) return false;
-        if (isMultiChoice(s)) {
-            if (!s.answer_text) return false;
-            let ids = [];
-            try { ids = JSON.parse(s.answer_text); } catch { return false; }
-            const correctIds = s.question?.options?.filter(o => o.is_correct).map(o => o.option_id) ?? [];
-            return ids.length > 0 && correctIds.every(id => ids.includes(id)) && ids.every(id => correctIds.includes(id));
-        }
+        if (isMultiChoice(s)) return getMultiState(s) === 'correct';
         return s.selected_option?.is_correct === true;
+    }).length;
+    const partial = selections.filter(s => {
+        if (isTextQuestion(s) || !isMultiChoice(s)) return false;
+        return getMultiState(s) === 'partial';
     }).length;
     const incorrect = selections.filter(s => {
         if (isTextQuestion(s)) return false;
-        if (isMultiChoice(s)) {
-            if (!s.answer_text) return false;
-            let ids = [];
-            try { ids = JSON.parse(s.answer_text); } catch { return false; }
-            if (ids.length === 0) return false;
-            const correctIds = s.question?.options?.filter(o => o.is_correct).map(o => o.option_id) ?? [];
-            return !(correctIds.every(id => ids.includes(id)) && ids.every(id => correctIds.includes(id)));
-        }
+        if (isMultiChoice(s)) return getMultiState(s) === 'incorrect';
         return s.selected_option != null && !s.selected_option.is_correct;
     }).length;
     const unanswered = selections.filter(s => {
@@ -63,6 +66,7 @@ const TestResults = () => {
 
     const chartData = [
         { name: 'Верно', value: correct, color: 'var(--success)' },
+        { name: 'Частично', value: partial, color: '#86efac' },
         { name: 'Неверно', value: incorrect, color: 'var(--error)' },
         { name: 'Без ответа', value: unanswered, color: '#DDD4F0' },
     ].filter(d => d.value > 0);
@@ -108,21 +112,17 @@ const TestResults = () => {
                     {selections.filter(s => !isTextQuestion(s)).map((s, i) => {
                         const isCorrect = s.selected_option?.is_correct;
 
-                        // multiple_choice: парсим JSON и проверяем правильность
                         let selectedIds = [];
-                        let multiCorrect = null;
+                        let multiState = null;
                         if (isMultiChoice(s)) {
                             if (s.answer_text) {
                                 try { selectedIds = JSON.parse(s.answer_text); } catch { selectedIds = []; }
                             }
-                            const correctIds = s.question?.options?.filter(o => o.is_correct).map(o => o.option_id) ?? [];
-                            const allCorrect = correctIds.every(id => selectedIds.includes(id));
-                            const noWrong = selectedIds.every(id => correctIds.includes(id));
-                            multiCorrect = selectedIds.length > 0 && allCorrect && noWrong;
+                            multiState = getMultiState(s);
                         }
 
                         const cardStyle = isMultiChoice(s)
-                            ? (multiCorrect === true ? styles.correct : multiCorrect === false ? styles.incorrect : styles.neutral)
+                            ? ({ correct: styles.correct, partial: styles.partial, incorrect: styles.incorrect, unanswered: styles.neutral }[multiState] ?? styles.neutral)
                             : isCorrect ? styles.correct : styles.incorrect;
 
                         return (
@@ -154,19 +154,31 @@ const TestResults = () => {
                                         {selectedIds.length === 0
                                             ? <p className={styles.skipped}>Ответ не дан</p>
                                             : <>
-                                                <span>Ваш ответ: <span className={styles.mark}>{multiCorrect ? '✓' : '✗'}</span></span>
+                                                <span>Ваш ответ: <span className={styles.mark}>
+                                                    {multiState === 'correct' ? '✓' : multiState === 'partial' ? '~ частично верно' : '✗'}
+                                                </span></span>
                                                 <ul className={styles.multiList}>
                                                     {selectedIds.map(id => {
                                                         const opt = s.question?.options?.find(o => o.option_id === id);
-                                                        const optCorrect = s.question?.options?.find(o => o.option_id === id)?.is_correct;
                                                         return (
-                                                            <li key={id} className={optCorrect ? styles.multiCorrect : styles.multiWrong}>
+                                                            <li key={id} className={styles.multiCorrect}>
                                                                 {opt?.option_text ?? `Вариант ${id}`}
                                                             </li>
                                                         );
                                                     })}
                                                 </ul>
-                                                {!multiCorrect && (
+                                                {multiState === 'partial' && (() => {
+                                                    const missed = s.question?.options?.filter(o => o.is_correct && !selectedIds.includes(o.option_id));
+                                                    return missed?.length > 0 ? (
+                                                        <div className={styles.correctAnswer}>
+                                                            Пропущены:
+                                                            <ul className={styles.multiList}>
+                                                                {missed.map(o => <li key={o.option_id}>{o.option_text}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                    ) : null;
+                                                })()}
+                                                {multiState === 'incorrect' && (
                                                     <div className={styles.correctAnswer}>
                                                         Правильные варианты:
                                                         <ul className={styles.multiList}>
@@ -199,16 +211,22 @@ const TestResults = () => {
                                 <p className={styles.qText}>{s.question?.question_text}</p>
                                 <p className={styles.answer}>
                                     {s.answer_text
-                                        ? <><strong>{s.answer_text}</strong></>
+                                        ? <strong>{s.answer_text}</strong>
                                         : <span className={styles.skipped}>Ответ не дан</span>
                                     }
                                 </p>
+                                {s.teacher_comment && (
+                                    <div className={styles.teacherComment}>
+                                        <span className={styles.commentLabel}>Комментарий преподавателя:</span>
+                                        <p>{s.teacher_comment}</p>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
                 )}
 
-                <button className="btn btn-outline" onClick={() => navigate(-1)}>
+                <button className="btn btn-outline" onClick={() => navigate(`/student/tests/${testId}?asgn=${attempt.assignment?.asgn_id}`)}>
                     ← Назад к тесту
                 </button>
             </div>

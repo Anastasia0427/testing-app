@@ -1,0 +1,149 @@
+.page {
+    padding: 8px 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+
+.heading {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.createBtn {
+    width: auto !important;
+    padding: 8px 45px !important;
+    font-size: 14px !important;
+    justify-content: center;
+    text-align: center;
+}
+
+.hint {
+    color: var(--text-muted);
+    font-size: 15px;
+    text-align: center;
+    margin-top: 60px;
+}
+
+.empty {
+    text-align: center;
+    margin-top: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-muted);
+}
+
+/* список тестов */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.testCard {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.cover {
+    width: 100px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cardBody {
+    flex: 1;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cardTop {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+}
+
+.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.inactive {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.testTitle {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.testDesc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+.metaItem {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* кнопки */
+.cardActions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border-left: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.cardActions .btn {
+    width: 140px;
+    font-size: 13px;
+    padding: 8px 12px;
+}

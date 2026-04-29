@@ -68,6 +68,28 @@
     border-color: var(--primary-dark);
 }
 
+.timer {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1px;
+    padding: 8px 0;
+    border-radius: 8px;
+    background: var(--primary-light);
+}
+
+.timerWarning {
+    color: var(--error);
+    background: #fee2e2;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+}
+
 .submitBtn {
     margin-top: auto;
 }

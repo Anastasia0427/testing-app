@@ -33,7 +33,7 @@ const TestDetail = () => {
         try {
             const res = await startAttempt(asgnId);
             navigate(`/student/tests/${id}/session`, {
-                state: { attempt_id: res.data.attempt_id, test: res.data.test }
+                state: { attempt_id: res.data.attempt_id, started_at: res.data.started_at, test: res.data.test }
             });
         } catch (err) {
             setError(err.response?.data?.error || 'Не удалось начать тест');
@@ -74,7 +74,7 @@ const TestDetail = () => {
                             {attempts.map((a, i) => (
                                 <div key={a.attempt_id} className={styles.attemptRow}>
                                     <span>Попытка {i + 1}</span>
-                                    <span>{a.finished_at ? `${a.score}%` : 'Не завершена'}</span>
+                                    <span>{a.finished_at ? (a.score !== null ? `${Math.round(a.score)}%` : 'На проверке') : 'Не завершена'}</span>
                                     {a.finished_at && (
                                         <button
                                             className={`btn btn-outline ${styles.viewBtn}`}

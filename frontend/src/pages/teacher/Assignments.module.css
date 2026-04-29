@@ -1,0 +1,114 @@
+.page {
+    padding: 8px 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.pageHeader {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.heading {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.sectionTitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 20px;
+}
+
+.hint {
+    color: var(--text-muted);
+    font-size: 15px;
+    text-align: center;
+    margin-top: 40px;
+}
+
+/* форма */
+.formCard {
+    margin-bottom: 24px;
+}
+
+.formRow {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+.assignBtn {
+    width: auto !important;
+    padding: 10px 28px !important;
+    font-size: 14px !important;
+}
+
+/* группы по тесту */
+.group {
+    margin-bottom: 16px;
+}
+
+.groupTitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+}
+
+/* таблица */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0 0 10px;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.table td {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.email {
+    color: var(--text);
+    font-weight: 500;
+}
+
+.deadline {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.noScore {
+    color: var(--text-muted);
+}
+
+.passed {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.failed {
+    color: var(--error);
+    font-weight: 600;
+}

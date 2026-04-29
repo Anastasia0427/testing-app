@@ -1,0 +1,276 @@
+.page {
+    padding: 8px 0;
+    max-width: 760px;
+}
+
+.pageHeader {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.heading {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+.sectionTitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 20px;
+}
+
+/* обложка */
+.coverRow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.coverPreview {
+    width: 80px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.coverLabel {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 7px 16px;
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.coverLabel:hover {
+    background: var(--primary-light);
+}
+
+/* три колонки */
+.row3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+/* список вопросов */
+.hint {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.qRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+}
+
+.qInfo {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.qNum {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.qText {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 3px;
+}
+
+.qMeta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.qActions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.qActions .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    width: auto;
+}
+
+/* редактор вопроса */
+.editor {
+    margin-top: 16px;
+    padding: 20px;
+    background: var(--bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.editorTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+}
+
+.editorRow {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+/* варианты ответа */
+.options {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.optionsLabel {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.optionsHint {
+    font-weight: 400;
+    font-size: 12px;
+}
+
+.optionRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.optionRow input[type="radio"],
+.optionRow input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.optionInput {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--font);
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.optionInput:focus {
+    border-color: var(--primary);
+}
+
+.removeOpt {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.removeOpt:hover {
+    color: var(--error);
+}
+
+.editorFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.editorFooter .btn {
+    width: auto;
+    font-size: 13px;
+}
+
+.saveBtn {
+    padding: 9px 20px !important;
+}
+
+/* вопрос открыт в редакторе */
+.qRowEditing {
+    background: #f5f0ff;
+    border-radius: 8px;
+    padding: 0 8px;
+}
+
+/* новые вопросы (ещё не сохранены) */
+.qRowNew {
+    background: #faf7ff;
+}
+
+.qNumNew {
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px dashed var(--primary);
+}
+
+/* добавить вопрос */
+.addQBtn {
+    margin-top: 16px;
+    width: auto;
+    font-size: 13px;
+}
+
+/* итоговая кнопка */
+.submitRow {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.submitBtn {
+    width: auto !important;
+    padding: 12px 32px !important;
+    font-size: 15px !important;
+}

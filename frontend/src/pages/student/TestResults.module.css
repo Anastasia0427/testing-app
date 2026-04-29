@@ -85,6 +85,7 @@
 }
 
 .correct { border-left-color: var(--success); }
+.partial { border-left-color: #86efac; }
 .incorrect { border-left-color: var(--error); }
 .neutral { border-left-color: var(--primary); }
 .text { border-left-color: var(--primary); }
@@ -152,6 +153,26 @@
     font-size: 13px;
     color: var(--text-muted);
     margin-top: -4px;
+}
+
+.teacherComment {
+    margin-top: 4px;
+    padding: 8px 12px;
+    background: var(--primary-light);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.commentLabel {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
 
 .hint {

@@ -1,4 +1,4 @@
-const { Assignment, Test, User, Role, Attempt } = require('../models');
+const { Assignment, Test, User, Role, Attempt, Notification } = require('../models');
 
 // POST /api/assignments — назначить тест студенту
 const createAssignment = async (req, res) => {
@@ -21,6 +21,14 @@ const createAssignment = async (req, res) => {
     if (existing) return res.status(409).json({ error: 'Тест уже назначен этому студенту' });
 
     const assignment = await Assignment.create({ student_id, test_id, deadline });
+
+    await Notification.create({
+        user_id: student_id,
+        type: 'new_assignment',
+        message: `Вам назначен тест «${test.title}»`,
+        link: `/student/tests/${test_id}?asgn=${assignment.asgn_id}`
+    });
+
     res.status(201).json(assignment);
 };
 

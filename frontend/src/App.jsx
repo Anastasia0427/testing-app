@@ -11,9 +11,11 @@ import TestSession from './pages/student/TestSession';
 import TestResults from './pages/student/TestResults';
 
 import TeacherDashboard from './pages/teacher/Dashboard';
+import TeacherProfile from './pages/teacher/Profile';
 import CreateTest from './pages/teacher/CreateTest';
 import EditTest from './pages/teacher/EditTest';
 import Assignments from './pages/teacher/Assignments';
+import AttemptReview from './pages/teacher/AttemptReview';
 
 function App() {
     return (
@@ -51,6 +53,12 @@ function App() {
             } />
             <Route path="/teacher/assignments" element={
                 <ProtectedRoute role="teacher"><Assignments /></ProtectedRoute>
+            } />
+            <Route path="/teacher/profile" element={
+                <ProtectedRoute role="teacher"><TeacherProfile /></ProtectedRoute>
+            } />
+            <Route path="/teacher/attempts/:attemptId/review" element={
+                <ProtectedRoute role="teacher"><AttemptReview /></ProtectedRoute>
             } />
 
             {/* редирект с корня */}

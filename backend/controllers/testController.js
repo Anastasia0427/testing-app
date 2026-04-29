@@ -38,7 +38,7 @@ const createTest = async (req, res) => {
 
     if (!title) return res.status(400).json({ error: 'Укажите название теста' });
 
-    const cover_image = req.file ? `/uploads/covers/${req.file.filename}` : null;
+    const cover_image = req.file ? `/uploads/covers/${req.file.filename}` : '/images/default-cover.png';
 
     const test = await Test.create({
         title,

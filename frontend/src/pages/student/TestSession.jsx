@@ -1,21 +1,81 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { submitAttempt } from '../../api/attempts';
 import styles from './TestSession.module.css';
+
+const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+};
 
 const TestSession = () => {
     const { id } = useParams();
     const { state } = useLocation();
     const navigate = useNavigate();
 
-    const { attempt_id, test } = state || {};
+    const { attempt_id, started_at, test } = state || {};
     const questions = test?.questions ?? [];
+    const timeLimitSec = test?.time_limit ? test.time_limit * 60 : null;
 
     const [current, setCurrent] = useState(0);
-    // answers: { [question_id]: { option_id?, answer_text? } }
     const [answers, setAnswers] = useState({});
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    // таймер
+    const [timeLeft, setTimeLeft] = useState(() => {
+        if (!timeLimitSec) return null;
+        const elapsed = Math.floor((Date.now() - new Date(started_at).getTime()) / 1000);
+        return Math.max(0, timeLimitSec - elapsed);
+    });
+    const submittingRef = useRef(false);
+
+    const handleSubmit = useCallback(async () => {
+        if (submittingRef.current) return;
+        submittingRef.current = true;
+        setSubmitting(true);
+        try {
+            const payload = questions.map(q => {
+                const a = answers[q.question_id] ?? {};
+                const type = q.type?.type;
+                if (type === 'multiple_choice') {
+                    const ids = a.option_ids ?? [];
+                    return {
+                        question_id: q.question_id,
+                        option_id: null,
+                        answer_text: ids.length > 0 ? JSON.stringify(ids) : null
+                    };
+                }
+                return {
+                    question_id: q.question_id,
+                    option_id: a.option_id ?? null,
+                    answer_text: a.answer_text ?? null
+                };
+            });
+            await submitAttempt(attempt_id, payload);
+            navigate(`/student/tests/${id}/results/${attempt_id}`);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка при отправке');
+            submittingRef.current = false;
+            setSubmitting(false);
+        }
+    }, [answers, questions, attempt_id, id, navigate]);
+
+    useEffect(() => {
+        if (timeLeft === null) return;
+        if (timeLeft === 0) {
+            handleSubmit();
+            return;
+        }
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) { clearInterval(timer); return 0; }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft, handleSubmit]);
 
     if (!state) {
         navigate(-1);
@@ -33,7 +93,7 @@ const TestSession = () => {
     const handleMultipleChoice = (option_id) => {
         const current_ids = answer.option_ids ?? [];
         const updated = current_ids.includes(option_id)
-            ? current_ids.filter(id => id !== option_id)
+            ? current_ids.filter(i => i !== option_id)
             : [...current_ids, option_id];
         setAnswers(prev => ({ ...prev, [question.question_id]: { option_ids: updated } }));
     };
@@ -52,34 +112,7 @@ const TestSession = () => {
         return false;
     };
 
-    const handleSubmit = async () => {
-        setSubmitting(true);
-        try {
-            const payload = questions.map(q => {
-                const a = answers[q.question_id] ?? {};
-                const type = q.type?.type;
-                if (type === 'multiple_choice') {
-                    // сериализуем все выбранные варианты в answer_text
-                    const ids = a.option_ids ?? [];
-                    return {
-                        question_id: q.question_id,
-                        option_id: null,
-                        answer_text: ids.length > 0 ? JSON.stringify(ids) : null
-                    };
-                }
-                return {
-                    question_id: q.question_id,
-                    option_id: a.option_id ?? null,
-                    answer_text: a.answer_text ?? null
-                };
-            });
-            await submitAttempt(attempt_id, payload);
-            navigate(`/student/tests/${id}/results/${attempt_id}`);
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка при отправке');
-            setSubmitting(false);
-        }
-    };
+    const isWarning = timeLeft !== null && timeLeft <= 60;
 
     return (
         <div className={styles.layout}>
@@ -97,6 +130,13 @@ const TestSession = () => {
                         </button>
                     ))}
                 </div>
+
+                {timeLeft !== null && (
+                    <div className={`${styles.timer} ${isWarning ? styles.timerWarning : ''}`}>
+                        ⏱ {formatTime(timeLeft)}
+                    </div>
+                )}
+
                 <button
                     className={`btn btn-primary ${styles.submitBtn}`}
                     onClick={handleSubmit}
@@ -116,7 +156,6 @@ const TestSession = () => {
                 <div className={styles.card}>
                     <p className={styles.questionText}>{question.question_text}</p>
 
-                    {/* single choice */}
                     {qType === 'single_choice' && (
                         <div className={styles.options}>
                             {question.options.map(opt => (
@@ -133,7 +172,6 @@ const TestSession = () => {
                         </div>
                     )}
 
-                    {/* multiple choice */}
                     {qType === 'multiple_choice' && (
                         <div className={styles.options}>
                             {question.options.map(opt => (
@@ -149,7 +187,6 @@ const TestSession = () => {
                         </div>
                     )}
 
-                    {/* text */}
                     {qType === 'text' && (
                         <textarea
                             className={styles.textarea}

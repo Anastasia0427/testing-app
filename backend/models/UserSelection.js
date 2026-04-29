@@ -27,6 +27,10 @@ const UserSelection = sequelize.define('UserSelection', {
         type: DataTypes.TEXT,
         allowNull: true
     },
+    teacher_comment: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
     answered_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,

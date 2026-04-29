@@ -4,13 +4,18 @@ import { RadialBarChart, RadialBar, ResponsiveContainer, Tooltip } from 'rechart
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyAssignments } from '../../api/attempts';
+import { updateProfile } from '../../api/users';
 import styles from './Profile.module.css';
 
 const Profile = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const navigate = useNavigate();
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const [name, setName] = useState(user?.name ?? '');
+    const [saving, setSaving] = useState(false);
+    const [saveMsg, setSaveMsg] = useState('');
 
     useEffect(() => {
         getMyAssignments()
@@ -18,7 +23,21 @@ const Profile = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    // считаем статистику
+    const handleSaveName = async () => {
+        setSaving(true);
+        setSaveMsg('');
+        try {
+            const { data } = await updateProfile({ name });
+            updateUser({ name: data.name });
+            setSaveMsg('Сохранено');
+            setTimeout(() => setSaveMsg(''), 2000);
+        } catch {
+            setSaveMsg('Ошибка сохранения');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const allAttempts = assignments.flatMap(a => a.attempts ?? []);
     const finished = allAttempts.filter(a => a.finished_at);
     const avgScore = finished.length
@@ -40,13 +59,30 @@ const Profile = () => {
                 {/* профиль */}
                 <div className={styles.card}>
                     <div className={styles.avatar}>
-                        {user?.email?.[0]?.toUpperCase()}
+                        {(user?.name ?? user?.email)?.[0]?.toUpperCase()}
                     </div>
                     <div className={styles.info}>
-                        <h2 className={styles.email}>{user?.email}</h2>
-                        <span className={styles.role}>
-                            {user?.role?.role === 'student' ? 'Студент' : 'Преподаватель'}
-                        </span>
+                        {user?.name && <h2 className={styles.email}>{user.name}</h2>}
+                        <p className={user?.name ? styles.subEmail : styles.email}>{user?.email}</p>
+                        <span className={styles.role}>Студент</span>
+                    </div>
+                </div>
+
+                {/* редактирование имени */}
+                <div className={styles.history}>
+                    <h3 className={styles.historyTitle}>Настройки профиля</h3>
+                    <div className={styles.nameRow}>
+                        <input
+                            className={styles.nameInput}
+                            placeholder="Введите имя"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                        />
+                        <button className="btn btn-outline" onClick={handleSaveName} disabled={saving}>
+                            {saving ? 'Сохранение...' : 'Сохранить'}
+                        </button>
+                        {saveMsg && <span className={styles.saveMsg}>{saveMsg}</span>}
                     </div>
                 </div>
 
@@ -93,10 +129,7 @@ const Profile = () => {
                     <h3 className={styles.historyTitle}>История тестов</h3>
 
                     {loading && <p className={styles.hint}>Загрузка...</p>}
-
-                    {!loading && assignments.length === 0 && (
-                        <p className={styles.hint}>Тестов пока нет.</p>
-                    )}
+                    {!loading && assignments.length === 0 && <p className={styles.hint}>Тестов пока нет.</p>}
 
                     {assignments.map(a => {
                         const finishedAttempts = a.attempts?.filter(at => at.finished_at) ?? [];
@@ -113,7 +146,6 @@ const Profile = () => {
                                         {finishedAttempts.length} из {a.test?.max_attempts ?? '∞'} попыток
                                     </span>
                                 </div>
-
                                 <div className={styles.testRight}>
                                     {best !== null && (
                                         <span className={`${styles.bestScore} ${isPassed ? styles.scorePassed : styles.scoreFailed}`}>
@@ -121,7 +153,6 @@ const Profile = () => {
                                         </span>
                                     )}
                                     {best === null && <span className={styles.noScore}>Не начат</span>}
-
                                     <button
                                         className="btn btn-outline"
                                         onClick={() => navigate(`/student/tests/${a.test.test_id}?asgn=${a.asgn_id}`)}

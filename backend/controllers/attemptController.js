@@ -1,11 +1,11 @@
-const { Assignment, Attempt, Test, Question, UserSelection } = require('../models');
+const { Assignment, Attempt, Test, Question, UserSelection, Notification } = require('../models');
 
 // GET /api/attempts/assignments — назначенные студенту тесты
 const getMyAssignments = async (req, res) => {
     const assignments = await Assignment.findAll({
         where: { student_id: req.user.user_id },
         include: [
-            { association: 'test', attributes: ['test_id', 'title', 'description', 'time_limit', 'pass_score', 'max_attempts'] },
+            { association: 'test', attributes: ['test_id', 'title', 'description', 'time_limit', 'pass_score', 'max_attempts', 'cover_image'] },
             { association: 'attempts', attributes: ['attempt_id', 'score', 'finished_at', 'started_at'] }
         ]
     });
@@ -52,14 +52,14 @@ const startAttempt = async (req, res) => {
         }]
     });
 
-    res.status(201).json({ attempt_id: attempt.attempt_id, test });
+    res.status(201).json({ attempt_id: attempt.attempt_id, started_at: attempt.started_at, test });
 };
 
 // POST /api/attempts/:id/submit — отправить ответы и получить результат
 const submitAttempt = async (req, res) => {
     const attempt = await Attempt.findOne({
         where: { attempt_id: req.params.id },
-        include: [{ association: 'assignment' }]
+        include: [{ association: 'assignment', include: [{ association: 'test', attributes: ['test_id', 'title', 'created_by'] }] }]
     });
 
     if (!attempt) return res.status(404).json({ error: 'Попытка не найдена' });
@@ -100,16 +100,15 @@ const submitAttempt = async (req, res) => {
         if (!userAnswer) continue;
 
         if (question.type?.type === 'multiple_choice' && userAnswer.answer_text) {
-            // парсим JSON с выбранными вариантами
             let selectedIds = [];
             try { selectedIds = JSON.parse(userAnswer.answer_text); } catch { selectedIds = []; }
 
             const correctIds = question.options.filter(o => o.is_correct).map(o => o.option_id);
-            const allCorrectSelected = correctIds.every(id => selectedIds.includes(id));
             const noWrongSelected = selectedIds.every(id => correctIds.includes(id));
 
-            if (allCorrectSelected && noWrongSelected) {
-                earnedPoints += question.points || 1;
+            if (noWrongSelected && selectedIds.length > 0 && correctIds.length > 0) {
+                const correctSelected = selectedIds.filter(id => correctIds.includes(id)).length;
+                earnedPoints += (question.points || 1) * (correctSelected / correctIds.length);
             }
         } else if (userAnswer.option_id) {
             const option = question.options.find(o => o.option_id === userAnswer.option_id);
@@ -119,9 +118,18 @@ const submitAttempt = async (req, res) => {
         }
     }
 
-    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : null;
 
     await attempt.update({ score, finished_at: new Date() });
+
+    const test = attempt.assignment.test;
+    const studentName = req.user.name || req.user.email;
+    await Notification.create({
+        user_id: test.created_by,
+        type: 'attempt_submitted',
+        message: `${studentName} сдал(а) тест «${test.title}»`,
+        link: `/teacher/attempts/${attempt.attempt_id}/review`
+    });
 
     res.json({
         score,
@@ -156,4 +164,104 @@ const getAttempt = async (req, res) => {
     res.json(attempt);
 };
 
-module.exports = { getMyAssignments, startAttempt, submitAttempt, getAttempt };
+// POST /api/attempts/:id/grade — учитель выставляет оценки за текстовые вопросы
+const gradeAttempt = async (req, res) => {
+    const { text_grades, comments } = req.body;
+    if (!text_grades || typeof text_grades !== 'object') {
+        return res.status(400).json({ error: 'Укажите text_grades' });
+    }
+
+    const attempt = await Attempt.findOne({
+        where: { attempt_id: req.params.id },
+        include: [{
+            association: 'assignment',
+            include: [{ association: 'test', where: { created_by: req.user.user_id } }]
+        }]
+    });
+
+    if (!attempt) return res.status(404).json({ error: 'Попытка не найдена или доступ запрещён' });
+    if (!attempt.finished_at) return res.status(400).json({ error: 'Попытка ещё не завершена' });
+
+    const questions = await Question.findAll({
+        where: { test_id: attempt.assignment.test_id },
+        include: [{ association: 'options' }, { association: 'type' }]
+    });
+
+    const selections = await UserSelection.findAll({ where: { attempt_id: attempt.attempt_id } });
+
+    let totalPoints = 0;
+    let earnedPoints = 0;
+
+    for (const question of questions) {
+        const pts = question.points || 1;
+        totalPoints += pts;
+
+        const qType = question.type?.type;
+        const userAnswer = selections.find(s => s.question_id === question.question_id);
+
+        if (qType === 'text') {
+            const g = text_grades[question.question_id];
+            if (g === true) earnedPoints += pts;
+            else if (g === 'partial') earnedPoints += pts * 0.5;
+        } else if (qType === 'multiple_choice' && userAnswer?.answer_text) {
+            let selectedIds = [];
+            try { selectedIds = JSON.parse(userAnswer.answer_text); } catch { selectedIds = []; }
+            const correctIds = question.options.filter(o => o.is_correct).map(o => o.option_id);
+            const noWrong = selectedIds.every(id => correctIds.includes(id));
+            if (noWrong && selectedIds.length > 0 && correctIds.length > 0) {
+                const correctSelected = selectedIds.filter(id => correctIds.includes(id)).length;
+                earnedPoints += pts * (correctSelected / correctIds.length);
+            }
+        } else if (qType === 'single_choice' && userAnswer?.option_id) {
+            const opt = question.options.find(o => o.option_id === userAnswer.option_id);
+            if (opt?.is_correct) earnedPoints += pts;
+        }
+    }
+
+    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+    await attempt.update({ score });
+
+    if (comments && typeof comments === 'object') {
+        for (const [questionId, comment] of Object.entries(comments)) {
+            const sel = selections.find(s => s.question_id === Number(questionId));
+            if (sel && comment?.trim()) {
+                await sel.update({ teacher_comment: comment.trim() });
+            }
+        }
+    }
+
+    res.json({ score, earned_points: earnedPoints, total_points: totalPoints });
+};
+
+// GET /api/attempts/:id/review — просмотр попытки учителем
+const reviewAttempt = async (req, res) => {
+    const attempt = await Attempt.findOne({
+        where: { attempt_id: req.params.id },
+        include: [
+            {
+                association: 'assignment',
+                include: [{
+                    association: 'test',
+                    where: { created_by: req.user.user_id },
+                    include: [{ association: 'questions', include: [{ association: 'type' }, { association: 'options' }] }]
+                }, {
+                    association: 'student',
+                    attributes: ['user_id', 'email', 'name']
+                }]
+            },
+            {
+                association: 'selections',
+                include: [
+                    { association: 'question', include: [{ association: 'type' }, { association: 'options' }] },
+                    { association: 'selected_option' }
+                ]
+            }
+        ]
+    });
+
+    if (!attempt) return res.status(404).json({ error: 'Попытка не найдена или доступ запрещён' });
+
+    res.json(attempt);
+};
+
+module.exports = { getMyAssignments, startAttempt, submitAttempt, getAttempt, reviewAttempt, gradeAttempt };

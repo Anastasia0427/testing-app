@@ -44,7 +44,7 @@ const Test = sequelize.define('Test', {
         field: 'is_active'
     },
     time_limit: {
-        type: DataTypes.TIME,
+        type: DataTypes.INTEGER,
         allowNull: true,
         field: 'time_limit'
     },

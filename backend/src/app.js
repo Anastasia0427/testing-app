@@ -41,6 +41,7 @@ app.use('/api/tests', require('../routes/testRoutes'));
 app.use('/api/assignments', require('../routes/assignmentRoutes'));
 app.use('/api/attempts', require('../routes/attemptRoutes'));
 app.use('/api/users', require('../routes/userRoutes'));
+app.use('/api/notifications', require('../routes/notificationRoutes'));
 
 // ===================== ERROR HANDLING =====================
 // 404 handler

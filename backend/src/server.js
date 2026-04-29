@@ -16,8 +16,7 @@ const startServer = async() => {
         // Sync models with database
         // WARNING: { force: true } will DROP ALL TABLES! Use only in development
         // await syncDatabase({ force: true }); // Пересоздать все таблицы
-        // await syncDatabase({ alter: true });  // Изменить существующие таблицы
-        await syncDatabase();
+        await syncDatabase(process.env.DB_ALTER === 'true' ? { alter: true } : {});
         // seeders не должны ронять сервер — только логируем ошибку
         try { await seedRoles(); } catch (e) { console.error('seedRoles failed:', e.message); }
         try { await seedQuestionTypes(); } catch (e) { console.error('seedQuestionTypes failed:', e.message); }

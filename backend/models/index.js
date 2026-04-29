@@ -9,6 +9,7 @@ const AnswerOption = require('./AnswerOption.js');
 const Assignment = require('./Assignment.js');
 const Attempt = require('./Attempt.js');
 const UserSelection = require('./UserSelection.js');
+const Notification = require('./Notification.js');
 
 //===================== ASSOCIATIONS =====================
 
@@ -138,6 +139,17 @@ User.hasMany(Test, {
   });
 
   
+  // User <-> Notification (One-to-Many)
+  User.hasMany(Notification, {
+    foreignKey: 'user_id',
+    as: 'notifications'
+  });
+
+  Notification.belongsTo(User, {
+    foreignKey: 'user_id',
+    as: 'user'
+  });
+
   // ===================== SYNC DATABASE =====================
   const syncDatabase = async (options = {}) => {
     try {
@@ -161,5 +173,6 @@ User.hasMany(Test, {
     AnswerOption,
     Assignment,
     Attempt,
-    UserSelection
+    UserSelection,
+    Notification
   };

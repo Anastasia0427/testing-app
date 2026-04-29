@@ -167,3 +167,44 @@
     text-align: center;
     padding: 20px 0;
 }
+
+.subEmail {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* строка редактирования имени */
+.nameRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nameInput {
+    flex: 1;
+    max-width: 320px;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--font);
+    color: var(--text);
+    background: #fafafa;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.nameInput:focus {
+    border-color: var(--primary);
+    background: #fff;
+}
+
+.nameRow .btn {
+    width: auto;
+}
+
+.saveMsg {
+    font-size: 13px;
+    color: var(--success);
+}
