@@ -3,18 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Layout from '../../components/Layout';
 import { getQuestionBank, deleteQuestion } from '../../api/questionBank';
+import { getSchemas } from '../../api/sandbox';
 import styles from './QuestionBank.module.css';
-
-const SCHEMA_LABELS = { books: 'Книги', hr: 'HR' };
 
 const QuestionBank = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [questions, setQuestions] = useState([]);
+    const [schemaLabels, setSchemaLabels] = useState({});
     const [loading, setLoading]     = useState(true);
     const [error, setError]         = useState('');
 
     useEffect(() => {
+        getSchemas()
+            .then(res => {
+                const map = {};
+                for (const s of res.data) map[s.key] = s.display_name;
+                setSchemaLabels(map);
+            })
+            .catch(() => {});
+
         getQuestionBank()
             .then(res => setQuestions(res.data))
             .catch(() => setError('Не удалось загрузить банк вопросов'))
@@ -55,8 +63,8 @@ const QuestionBank = () => {
                                 <div key={q.sq_id} className={styles.card}>
                                     <div className={styles.cardBody}>
                                         <div className={styles.cardTop}>
-                                            <span className={`${styles.schemaBadge} ${styles[q.schema_name]}`}>
-                                                {SCHEMA_LABELS[q.schema_name] ?? q.schema_name}
+                                            <span className={`${styles.schemaBadge} ${styles[q.schema_name] ?? styles.custom}`}>
+                                                {schemaLabels[q.schema_name] ?? q.schema_name}
                                             </span>
                                             {isOwn && <span className={styles.ownBadge}>мой</span>}
                                         </div>

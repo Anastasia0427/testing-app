@@ -77,6 +77,11 @@
     color: #065f46;
 }
 
+.custom {
+    background: #f3f4f6;
+    color: #374151;
+}
+
 .ownBadge {
     font-size: 11px;
     font-weight: 600;

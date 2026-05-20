@@ -18,6 +18,7 @@ import Assignments from './pages/teacher/Assignments';
 import AttemptReview from './pages/teacher/AttemptReview';
 import QuestionBank from './pages/teacher/QuestionBank';
 import SqlQuestionEditor from './pages/teacher/SqlQuestionEditor';
+import SchemaManager from './pages/teacher/SchemaManager';
 
 function App() {
     return (
@@ -70,6 +71,9 @@ function App() {
             } />
             <Route path="/teacher/question-bank/:id/edit" element={
                 <ProtectedRoute role="teacher"><SqlQuestionEditor /></ProtectedRoute>
+            } />
+            <Route path="/teacher/schemas" element={
+                <ProtectedRoute role="teacher"><SchemaManager /></ProtectedRoute>
             } />
 
             {/* редирект с корня */}

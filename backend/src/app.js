@@ -44,6 +44,7 @@ app.use('/api/users', require('../routes/userRoutes'));
 app.use('/api/notifications', require('../routes/notificationRoutes'));
 app.use('/api/sandbox',        require('../routes/sandboxRoutes'));
 app.use('/api/question-bank', require('../routes/sqlQuestionBankRoutes'));
+app.use('/api/schemas',        require('../routes/schemaRoutes'));
 
 // ===================== ERROR HANDLING =====================
 // 404 handler

@@ -4,7 +4,7 @@ const auth = require('../middleware/authMiddleware');
 const role = require('../middleware/roleMiddleware');
 const ctrl = require('../controllers/sqlQuestionBankController');
 
-const teacherOnly = [auth, role(['teacher', 'admin'])];
+const teacherOnly = [auth, role('teacher', 'admin')];
 
 router.get('/',       auth,         asyncHandler(ctrl.getAll));
 router.get('/:id',    auth,         asyncHandler(ctrl.getById));

@@ -1,0 +1,52 @@
+.wrap {
+    margin: -4px 0 12px;
+}
+
+.toggle {
+    background: none;
+    border: none;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 2px 0;
+    line-height: 1.5;
+}
+
+.toggle:hover {
+    text-decoration: underline;
+}
+
+.body {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #f9f7ff;
+}
+
+.hint, .error {
+    font-size: 13px;
+    margin: 0;
+}
+
+.error { color: var(--error); }
+.hint  { color: var(--text-muted); }
+
+.tableBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tableName {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 0;
+}

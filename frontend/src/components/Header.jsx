@@ -41,6 +41,8 @@ const Header = () => {
                         <>
                             <Link to="/teacher/dashboard">Мои тесты</Link>
                             <Link to="/teacher/assignments">Назначения</Link>
+                            <Link to="/teacher/question-bank">Банк вопросов</Link>
+                            <Link to="/teacher/schemas">Мои схемы</Link>
                         </>
                     ) : (
                         <>

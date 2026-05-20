@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import Layout from '../../components/Layout';
+import SchemaPreview from '../../components/SchemaPreview';
 import { getSchemas, runQuery } from '../../api/sandbox';
 import { createQuestion, getQuestionById, updateQuestion } from '../../api/questionBank';
 import styles from './SqlQuestionEditor.module.css';
@@ -25,7 +26,7 @@ const SqlQuestionEditor = () => {
     useEffect(() => {
         getSchemas().then(res => {
             setSchemas(res.data);
-            if (!isEdit) setForm(f => ({ ...f, schema_name: res.data[0] ?? '' }));
+            if (!isEdit) setForm(f => ({ ...f, schema_name: res.data[0]?.key ?? '' }));
         });
 
         if (isEdit) {
@@ -96,10 +97,9 @@ const SqlQuestionEditor = () => {
 
                 <div className={`card ${styles.formCard}`}>
                     {/* Название */}
-                    <div className={styles.field}>
-                        <label className={styles.label}>Название (для банка)</label>
+                    <div className="form-group">
+                        <label>Название (для банка)</label>
                         <input
-                            className="input"
                             placeholder="Например: Выборка авторов старше 1850 г."
                             value={form.title}
                             onChange={set('title')}
@@ -107,24 +107,25 @@ const SqlQuestionEditor = () => {
                     </div>
 
                     {/* Схема */}
-                    <div className={styles.field}>
-                        <label className={styles.label}>Схема базы данных</label>
+                    <div className="form-group">
+                        <label>Схема базы данных</label>
                         <select
-                            className="input"
                             value={form.schema_name}
                             onChange={set('schema_name')}
                         >
                             {schemas.map(s => (
-                                <option key={s} value={s}>{s}</option>
+                                <option key={s.key} value={s.key}>
+                                    {s.display_name}{!s.builtin ? ' (моя)' : ''}
+                                </option>
                             ))}
                         </select>
                     </div>
+                    <SchemaPreview schemaKey={form.schema_name} />
 
                     {/* Текст задания */}
-                    <div className={styles.field}>
-                        <label className={styles.label}>Текст задания</label>
+                    <div className="form-group">
+                        <label>Текст задания</label>
                         <textarea
-                            className="input"
                             rows={4}
                             placeholder="Напишите SQL-запрос, который выводит имена всех авторов, рождённых до 1850 года."
                             value={form.question_text}
@@ -133,9 +134,9 @@ const SqlQuestionEditor = () => {
                     </div>
 
                     {/* Эталонный запрос */}
-                    <div className={styles.field}>
+                    <div className="form-group">
                         <div className={styles.sqlHeader}>
-                            <label className={styles.label}>Эталонный запрос (правильный ответ)</label>
+                            <label>Эталонный запрос (правильный ответ)</label>
                             <button
                                 className="btn btn-outline"
                                 onClick={handleRunQuery}

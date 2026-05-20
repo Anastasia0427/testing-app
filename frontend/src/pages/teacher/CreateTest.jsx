@@ -6,6 +6,7 @@ import { getSchemas, runQuery as sandboxRun } from '../../api/sandbox';
 import { getQuestionBank } from '../../api/questionBank';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
+import SchemaPreview from '../../components/SchemaPreview';
 import styles from './TestForm.module.css';
 
 const TYPES = [
@@ -61,15 +62,15 @@ const CreateTest = () => {
         getSchemas().then(res => setSchemas(res.data)).catch(() => {});
     }, []);
 
-    const openBankPicker = () => {
-        setShowBankPicker(true);
-        if (bankQuestions.length === 0) {
+    const toggleBankPicker = () => {
+        if (!showBankPicker && bankQuestions.length === 0) {
             setBankLoading(true);
             getQuestionBank()
                 .then(res => setBankQuestions(res.data))
                 .catch(() => {})
                 .finally(() => setBankLoading(false));
         }
+        setShowBankPicker(v => !v);
     };
 
     const pickBankQuestion = (q) => {
@@ -123,7 +124,7 @@ const CreateTest = () => {
                 if (!isSql && value !== 'text' && !wasChoice)
                     next.options = [{ text: '', is_correct: false }, { text: '', is_correct: false }];
                 if (isSql && !next.schema_name)
-                    next.schema_name = schemas[0] || 'books';
+                    next.schema_name = schemas[0]?.key || 'books';
                 setSqlRunResult(null);
                 setSqlRunError('');
             }
@@ -402,8 +403,8 @@ const CreateTest = () => {
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
                                         <button className="btn btn-outline"
                                             style={{ width: 'auto', fontSize: 12 }}
-                                            onClick={openBankPicker}>
-                                            Выбрать из банка ↓
+                                            onClick={toggleBankPicker}>
+                                            {showBankPicker ? '↑ Свернуть' : '↓ Из банка'}
                                         </button>
                                     </div>
 
@@ -416,7 +417,9 @@ const CreateTest = () => {
                                             {bankQuestions.map(q => (
                                                 <div key={q.sq_id} className={styles.bankItem}
                                                     onClick={() => pickBankQuestion(q)}>
-                                                    <span className={styles.bankSchema}>{q.schema_name}</span>
+                                                    <span className={`${styles.bankSchema} ${styles[q.schema_name] ?? styles.custom}`}>
+                                                        {schemas.find(s => s.key === q.schema_name)?.display_name ?? q.schema_name}
+                                                    </span>
                                                     <div>
                                                         <p className={styles.bankTitle}>{q.title}</p>
                                                         <p className={styles.bankText}>{q.question_text?.slice(0, 90)}{q.question_text?.length > 90 ? '…' : ''}</p>
@@ -431,9 +434,14 @@ const CreateTest = () => {
                                         <select value={editing.schema_name}
                                             onChange={e => handleQField('schema_name', e.target.value)}
                                             style={{ width: 'auto' }}>
-                                            {schemas.map(s => <option key={s} value={s}>{s}</option>)}
+                                            {schemas.map(s => (
+                                                <option key={s.key} value={s.key}>
+                                                    {s.display_name}{!s.builtin ? ' (моя)' : ''}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
+                                    <SchemaPreview schemaKey={editing.schema_name} />
                                     <div className="form-group">
                                         <label>Эталонный SQL *</label>
                                         <CodeMirror

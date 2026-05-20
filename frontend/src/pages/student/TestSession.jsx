@@ -21,10 +21,22 @@ const TestSession = () => {
     const questions = test?.questions ?? [];
     const timeLimitSec = test?.time_limit ? test.time_limit * 60 : null;
 
+    const storageKey = attempt_id ? `draft_answers_${attempt_id}` : null;
+
     const [current, setCurrent] = useState(0);
-    const [answers, setAnswers] = useState({});
+    const [answers, setAnswers] = useState(() => {
+        if (!storageKey) return {};
+        try { return JSON.parse(localStorage.getItem(storageKey)) ?? {}; }
+        catch { return {}; }
+    });
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!storageKey) return;
+        try { localStorage.setItem(storageKey, JSON.stringify(answers)); }
+        catch {}
+    }, [answers, storageKey]);
 
     // sql-вопросы: состояние per-question (run/check результаты)
     const [sqlState, setSqlState] = useState({});
@@ -61,13 +73,14 @@ const TestSession = () => {
                 };
             });
             await submitAttempt(attempt_id, payload);
+            if (storageKey) localStorage.removeItem(storageKey);
             navigate(`/student/tests/${id}/results/${attempt_id}`);
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка при отправке');
             submittingRef.current = false;
             setSubmitting(false);
         }
-    }, [answers, questions, attempt_id, id, navigate]);
+    }, [answers, questions, attempt_id, id, navigate, storageKey]);
 
     useEffect(() => {
         if (timeLeft === null) return;

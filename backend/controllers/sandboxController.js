@@ -1,6 +1,7 @@
 const sandboxService = require('../services/sandboxService');
-const { Question } = require('../models');
+const { Question, SandboxSchema, Role } = require('../models');
 const AppError = require('../utils/AppError');
+const { BUILTIN_SCHEMAS } = require('../services/schemaManagerService');
 
 // POST /api/sandbox/run — выполнить произвольный запрос (для редактора)
 const runQuery = async (req, res) => {
@@ -33,9 +34,23 @@ const checkAnswer = async (req, res) => {
     res.json(result);
 };
 
-// GET /api/sandbox/schemas — список доступных схем
-const getSchemas = async (_req, res) => {
-    res.json(sandboxService.ALLOWED_SCHEMAS);
+const BUILTIN_DISPLAY = { books: 'Книги', hr: 'HR' };
+
+// GET /api/sandbox/schemas — встроенные схемы + собственные схемы учителя
+const getSchemas = async (req, res) => {
+    const builtin = BUILTIN_SCHEMAS.map(key => ({ key, display_name: BUILTIN_DISPLAY[key] ?? key, builtin: true }));
+
+    const roleRecord = await Role.findByPk(req.user.role_id);
+    if (roleRecord?.role === 'teacher' || roleRecord?.role === 'admin') {
+        const own = await SandboxSchema.findAll({
+            where: { owner_id: req.user.user_id },
+            attributes: ['schema_key', 'display_name'],
+        });
+        const custom = own.map(s => ({ key: s.schema_key, display_name: s.display_name, builtin: false }));
+        return res.json([...builtin, ...custom]);
+    }
+
+    res.json(builtin);
 };
 
 // GET /api/sandbox/schema-info/:schema — структура таблиц схемы

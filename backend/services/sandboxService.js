@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const AppError = require('../utils/AppError');
+const { isSchemaAllowed } = require('./schemaManagerService');
 
 // Пул для выполнения запросов студентов/преподавателей (sandbox_user — только SELECT)
 const sandboxPool = new Pool({
@@ -27,7 +28,6 @@ const metaPool = new Pool({
     idleTimeoutMillis: 30000,
 });
 
-const ALLOWED_SCHEMAS = ['books', 'hr'];
 
 // ─── private ──────────────────────────────────────────────────────────────────
 
@@ -77,7 +77,7 @@ const compareResults = (a, b, ordered = false) => {
  * Возвращает { columns, rows, rowCount } или бросает AppError.
  */
 const runQuery = async (sql, schema) => {
-    if (!ALLOWED_SCHEMAS.includes(schema))
+    if (!await isSchemaAllowed(schema))
         throw new AppError(`Схема "${schema}" не поддерживается`, 400);
 
     const client = await sandboxPool.connect();
@@ -122,13 +122,22 @@ const runAndCompare = async (studentSql, referenceSql, schema) => {
  * Возвращает структуру таблиц схемы: имена таблиц, столбцы, типы, FK.
  */
 const getSchemaInfo = async (schema) => {
-    if (!ALLOWED_SCHEMAS.includes(schema))
+    if (!await isSchemaAllowed(schema))
         throw new AppError(`Схема "${schema}" не поддерживается`, 400);
 
     const client = await metaPool.connect();
     try {
         const { rows: cols } = await client.query(`
-            SELECT c.table_name, c.column_name, c.data_type, c.is_nullable,
+            SELECT c.table_name, c.column_name,
+                   CASE
+                       WHEN c.character_maximum_length IS NOT NULL
+                           THEN c.data_type || '(' || c.character_maximum_length || ')'
+                       WHEN c.data_type = 'numeric' AND c.numeric_precision IS NOT NULL
+                           THEN 'numeric(' || c.numeric_precision ||
+                                CASE WHEN c.numeric_scale IS NOT NULL THEN ',' || c.numeric_scale ELSE '' END || ')'
+                       ELSE c.data_type
+                   END AS data_type,
+                   c.is_nullable,
                    kcu.constraint_name AS pk_name,
                    ccu.table_name      AS fk_ref_table,
                    ccu.column_name     AS fk_ref_column
@@ -176,4 +185,4 @@ const getSchemaInfo = async (schema) => {
     }
 };
 
-module.exports = { runQuery, runAndCompare, getSchemaInfo, ALLOWED_SCHEMAS };
+module.exports = { runQuery, runAndCompare, getSchemaInfo };
