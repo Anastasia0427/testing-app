@@ -1,0 +1,122 @@
+.page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.pageHeader {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.heading {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.formCard {
+    display: flex;
+    flex-direction: column;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.sqlHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.editorWrap {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 140px;
+}
+
+.queryError {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-family: monospace;
+}
+
+.resultWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.resultMeta {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.tableWrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.table th {
+    background: var(--surface);
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+}
+
+.table td {
+    padding: 7px 12px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover td {
+    background: var(--primary-light);
+}
+
+.null {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+}

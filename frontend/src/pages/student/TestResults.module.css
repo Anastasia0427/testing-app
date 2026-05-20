@@ -180,3 +180,16 @@
     color: var(--text-muted);
     margin-top: 60px;
 }
+
+.sqlCode {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    background: #f5f3ff;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 4px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--text);
+    border: 1px solid var(--border);
+}

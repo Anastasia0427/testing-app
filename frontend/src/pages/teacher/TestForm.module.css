@@ -255,6 +255,85 @@
     border: 1px dashed var(--primary);
 }
 
+/* SQL-редактор внутри формы вопроса */
+.sqlBlock {
+    margin-top: 4px;
+    padding: 14px;
+    background: #f9f9ff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.bankPicker {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    max-height: 240px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+
+.bankHint {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.bankItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.bankItem:last-child {
+    border-bottom: none;
+}
+
+.bankItem:hover {
+    background: var(--primary-light, #f0edff);
+}
+
+.bankSchema {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-top: 2px;
+}
+
+.books {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.hr {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.custom {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.bankTitle {
+    margin: 0 0 2px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.bankText {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
 /* добавить вопрос */
 .addQBtn {
     margin-top: 16px;

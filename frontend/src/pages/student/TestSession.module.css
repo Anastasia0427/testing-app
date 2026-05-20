@@ -196,3 +196,172 @@
     cursor: not-allowed;
     background: transparent;
 }
+
+/* ── SQL question ── */
+.sqlSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.schemaPanel {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.schemaSummary {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    background: #fafafa;
+}
+
+.schemaSummary:hover {
+    background: var(--primary-light);
+}
+
+.schemaContent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+}
+
+.schemaTableBlock {
+    min-width: 200px;
+}
+
+.schemaTableName {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 6px;
+}
+
+.schemaCols {
+    border-collapse: collapse;
+    font-size: 12px;
+    width: 100%;
+}
+
+.schemaCols th {
+    text-align: left;
+    padding: 3px 8px;
+    background: #f0f0f0;
+    color: var(--text-muted);
+    font-weight: 600;
+    border: 1px solid #e0e0e0;
+}
+
+.schemaCols td {
+    padding: 3px 8px;
+    border: 1px solid #e0e0e0;
+    color: var(--text);
+}
+
+.fkRef {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.sqlEditor {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.sqlEditor:focus-within {
+    border-color: var(--primary);
+}
+
+.sqlActions {
+    display: flex;
+    gap: 10px;
+}
+
+.sqlActions .btn {
+    width: auto;
+    font-size: 14px;
+}
+
+.checkBtn {
+    flex: 1;
+}
+
+.sqlError {
+    padding: 10px 14px;
+    background: #fee2e2;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #b91c1c;
+    font-family: monospace;
+}
+
+.sqlResultWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sqlResultLabel {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.sqlTableWrap {
+    overflow-x: auto;
+    max-height: 220px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.sqlTable {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+
+.sqlTable th {
+    padding: 6px 12px;
+    background: #f5f5f5;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+
+.sqlTable td {
+    padding: 5px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: nowrap;
+}
+
+.sqlTable tr:last-child td {
+    border-bottom: none;
+}
+
+.sqlFeedback {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.sqlCorrect {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.sqlWrong {
+    background: #fee2e2;
+    color: #991b1b;
+}

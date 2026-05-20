@@ -32,8 +32,15 @@ const Question = sequelize.define('Question', {
                 msg: 'Оценка не может быть отрицательной!'
             }
         }
-
-    }
+    },
+    reference_sql: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
+    schema_name: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+    },
 }, {
     tableName: 'questions',
     timestamps: false

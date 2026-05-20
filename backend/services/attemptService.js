@@ -1,14 +1,16 @@
 const { Assignment, Attempt, Test, Question, UserSelection, Notification } = require('../models');
 const AppError = require('../utils/AppError');
+const sandboxService = require('./sandboxService');
 
 // ─── private: score calculation ───────────────────────────────────────────────
 
-const calcAutoScore = (questions, answers) => {
+const calcAutoScore = async (questions, answers) => {
     let totalPoints = 0;
     let earnedPoints = 0;
 
     for (const question of questions) {
-        if (question.type?.type === 'text') continue;
+        const qType = question.type?.type;
+        if (qType === 'text') continue;
 
         const pts = question.points || 1;
         totalPoints += pts;
@@ -16,7 +18,15 @@ const calcAutoScore = (questions, answers) => {
         const userAnswer = answers.find(a => a.question_id === question.question_id);
         if (!userAnswer) continue;
 
-        if (question.type?.type === 'multiple_choice' && userAnswer.answer_text) {
+        if (qType === 'sql_code') {
+            if (!userAnswer.answer_text?.trim() || !question.reference_sql || !question.schema_name) continue;
+            try {
+                const { correct } = await sandboxService.runAndCompare(
+                    userAnswer.answer_text, question.reference_sql, question.schema_name
+                );
+                if (correct) earnedPoints += pts;
+            } catch { /* SQL error = no points */ }
+        } else if (qType === 'multiple_choice' && userAnswer.answer_text) {
             let selectedIds = [];
             try { selectedIds = JSON.parse(userAnswer.answer_text); } catch { selectedIds = []; }
 
@@ -36,7 +46,7 @@ const calcAutoScore = (questions, answers) => {
     return { totalPoints, earnedPoints };
 };
 
-const calcGradedScore = (questions, selections, textGrades) => {
+const calcGradedScore = async (questions, selections, textGrades) => {
     let totalPoints = 0;
     let earnedPoints = 0;
 
@@ -47,7 +57,15 @@ const calcGradedScore = (questions, selections, textGrades) => {
         const qType = question.type?.type;
         const userAnswer = selections.find(s => s.question_id === question.question_id);
 
-        if (qType === 'text') {
+        if (qType === 'sql_code') {
+            if (!userAnswer?.answer_text?.trim() || !question.reference_sql || !question.schema_name) continue;
+            try {
+                const { correct } = await sandboxService.runAndCompare(
+                    userAnswer.answer_text, question.reference_sql, question.schema_name
+                );
+                if (correct) earnedPoints += pts;
+            } catch { /* SQL error = no points */ }
+        } else if (qType === 'text') {
             const g = textGrades[question.question_id];
             if (g === true) earnedPoints += pts;
             else if (g === 'partial') earnedPoints += pts * 0.5;
@@ -110,6 +128,7 @@ const startAttempt = async (assignmentId, studentId) => {
     const test = await Test.findByPk(assignment.test.test_id, {
         include: [{
             association: 'questions',
+            attributes: { exclude: ['reference_sql'] },
             include: [
                 { association: 'options', attributes: ['option_id', 'option_text'] },
                 { association: 'type' }
@@ -147,7 +166,7 @@ const submitAttempt = async (attemptId, studentId, studentName, answers) => {
         include: [{ association: 'options' }, { association: 'type' }]
     });
 
-    const { totalPoints, earnedPoints } = calcAutoScore(questions, answers);
+    const { totalPoints, earnedPoints } = await calcAutoScore(questions, answers);
     const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : null;
 
     await attempt.update({ score, finished_at: new Date() });
@@ -171,7 +190,11 @@ const getAttempt = async (attemptId, studentId) => {
             {
                 association: 'selections',
                 include: [
-                    { association: 'question', include: [{ association: 'type' }, { association: 'options' }] },
+                    {
+                        association: 'question',
+                        attributes: { exclude: ['reference_sql'] },
+                        include: [{ association: 'type' }, { association: 'options' }]
+                    },
                     { association: 'selected_option' }
                 ]
             }
@@ -234,7 +257,7 @@ const gradeAttempt = async (attemptId, teacherId, textGrades, comments) => {
     });
 
     const selections = await UserSelection.findAll({ where: { attempt_id: attempt.attempt_id } });
-    const { totalPoints, earnedPoints } = calcGradedScore(questions, selections, textGrades);
+    const { totalPoints, earnedPoints } = await calcGradedScore(questions, selections, textGrades);
     const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
 
     await attempt.update({ score });

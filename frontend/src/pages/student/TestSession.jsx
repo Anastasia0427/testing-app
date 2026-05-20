@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { submitAttempt } from '../../api/attempts';
+import { getSchemaInfo, runQuery as sandboxRun, checkAnswer as sandboxCheck } from '../../api/sandbox';
+import CodeMirror from '@uiw/react-codemirror';
+import { sql } from '@codemirror/lang-sql';
 import styles from './TestSession.module.css';
 
 const formatTime = (seconds) => {
@@ -18,10 +21,26 @@ const TestSession = () => {
     const questions = test?.questions ?? [];
     const timeLimitSec = test?.time_limit ? test.time_limit * 60 : null;
 
+    const storageKey = attempt_id ? `draft_answers_${attempt_id}` : null;
+
     const [current, setCurrent] = useState(0);
-    const [answers, setAnswers] = useState({});
+    const [answers, setAnswers] = useState(() => {
+        if (!storageKey) return {};
+        try { return JSON.parse(localStorage.getItem(storageKey)) ?? {}; }
+        catch { return {}; }
+    });
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!storageKey) return;
+        try { localStorage.setItem(storageKey, JSON.stringify(answers)); }
+        catch {}
+    }, [answers, storageKey]);
+
+    // sql-вопросы: состояние per-question (run/check результаты)
+    const [sqlState, setSqlState] = useState({});
+    const [schemaInfoMap, setSchemaInfoMap] = useState({});
 
     // таймер
     const [timeLeft, setTimeLeft] = useState(() => {
@@ -54,13 +73,14 @@ const TestSession = () => {
                 };
             });
             await submitAttempt(attempt_id, payload);
+            if (storageKey) localStorage.removeItem(storageKey);
             navigate(`/student/tests/${id}/results/${attempt_id}`);
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка при отправке');
             submittingRef.current = false;
             setSubmitting(false);
         }
-    }, [answers, questions, attempt_id, id, navigate]);
+    }, [answers, questions, attempt_id, id, navigate, storageKey]);
 
     useEffect(() => {
         if (timeLeft === null) return;
@@ -76,6 +96,17 @@ const TestSession = () => {
         }, 1000);
         return () => clearInterval(timer);
     }, [timeLeft, handleSubmit]);
+
+    // загружаем схему при переходе на sql-вопрос
+    useEffect(() => {
+        const q = questions[current];
+        if (q?.type?.type !== 'sql_code' || !q.schema_name) return;
+        const schema = q.schema_name;
+        if (schemaInfoMap[schema]) return;
+        getSchemaInfo(schema)
+            .then(res => setSchemaInfoMap(prev => ({ ...prev, [schema]: res.data })))
+            .catch(() => {});
+    }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (!state) {
         navigate(-1);
@@ -102,6 +133,38 @@ const TestSession = () => {
         setAnswers(prev => ({ ...prev, [question.question_id]: { answer_text } }));
     };
 
+    const setSqlQState = (qid, patch) =>
+        setSqlState(prev => ({ ...prev, [qid]: { ...prev[qid], ...patch } }));
+
+    const handleSqlChange = (qid, value) =>
+        setAnswers(prev => ({ ...prev, [qid]: { ...prev[qid], answer_text: value } }));
+
+    const handleSqlRun = async (qid, sqlText, schema) => {
+        if (!sqlText?.trim()) return;
+        if (!schema) {
+            setSqlQState(qid, { runError: 'Схема БД не указана для этого вопроса' });
+            return;
+        }
+        setSqlQState(qid, { running: true, runResult: null, runError: '' });
+        try {
+            const { data } = await sandboxRun(sqlText, schema);
+            setSqlQState(qid, { running: false, runResult: data });
+        } catch (err) {
+            setSqlQState(qid, { running: false, runError: err.response?.data?.error || 'Ошибка выполнения' });
+        }
+    };
+
+    const handleSqlCheck = async (qid, sqlText) => {
+        if (!sqlText?.trim()) return;
+        setSqlQState(qid, { checking: true, checkResult: null, checkError: '' });
+        try {
+            const { data } = await sandboxCheck(sqlText, qid);
+            setSqlQState(qid, { checking: false, checkResult: data });
+        } catch (err) {
+            setSqlQState(qid, { checking: false, checkError: err.response?.data?.error || 'Ошибка при проверке' });
+        }
+    };
+
     const isAnswered = (q) => {
         const a = answers[q.question_id];
         if (!a) return false;
@@ -109,10 +172,16 @@ const TestSession = () => {
         if (type === 'single_choice') return !!a.option_id;
         if (type === 'multiple_choice') return a.option_ids?.length > 0;
         if (type === 'text') return !!a.answer_text?.trim();
+        if (type === 'sql_code') return !!a.answer_text?.trim();
         return false;
     };
 
     const isWarning = timeLeft !== null && timeLeft <= 60;
+
+    // для sql-вопроса
+    const qid = question?.question_id;
+    const qSql = (qid && sqlState[qid]) || {};
+    const schemaInfo = question?.schema_name ? schemaInfoMap[question.schema_name] : null;
 
     return (
         <div className={styles.layout}>
@@ -195,6 +264,93 @@ const TestSession = () => {
                             value={answer.answer_text ?? ''}
                             onChange={e => handleText(e.target.value)}
                         />
+                    )}
+
+                    {qType === 'sql_code' && (
+                        <div className={styles.sqlSection}>
+                            {schemaInfo && (
+                                <details className={styles.schemaPanel}>
+                                    <summary className={styles.schemaSummary}>
+                                        Схема БД: <strong>{question.schema_name}</strong>
+                                    </summary>
+                                    <div className={styles.schemaContent}>
+                                        {Object.entries(schemaInfo).map(([table, cols]) => (
+                                            <div key={table} className={styles.schemaTableBlock}>
+                                                <p className={styles.schemaTableName}>{table}</p>
+                                                <table className={styles.schemaCols}>
+                                                    <thead>
+                                                        <tr><th>Столбец</th><th>Тип</th><th>Связь</th></tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {cols.map(col => (
+                                                            <tr key={col.column}>
+                                                                <td>{col.primary_key ? '🔑 ' : ''}{col.column}</td>
+                                                                <td>{col.type}</td>
+                                                                <td>{col.fk_ref && <span className={styles.fkRef}>→ {col.fk_ref}</span>}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                            )}
+
+                            <CodeMirror
+                                value={answer.answer_text ?? ''}
+                                onChange={v => handleSqlChange(qid, v)}
+                                extensions={[sql()]}
+                                height="160px"
+                                basicSetup={{ lineNumbers: true }}
+                                className={styles.sqlEditor}
+                            />
+
+                            <div className={styles.sqlActions}>
+                                <button className="btn btn-outline"
+                                    onClick={() => handleSqlRun(qid, answer.answer_text, question.schema_name)}
+                                    disabled={qSql.running || !answer.answer_text?.trim()}>
+                                    {qSql.running ? '...' : '▶ Запустить'}
+                                </button>
+                                <button className={`btn btn-primary ${styles.checkBtn}`}
+                                    onClick={() => handleSqlCheck(qid, answer.answer_text)}
+                                    disabled={qSql.checking || !answer.answer_text?.trim()}>
+                                    {qSql.checking ? '...' : '✓ Проверить ответ'}
+                                </button>
+                            </div>
+
+                            {qSql.runError && <p className={styles.sqlError}>{qSql.runError}</p>}
+
+                            {qSql.runResult && !qSql.runError && (
+                                <div className={styles.sqlResultWrap}>
+                                    <p className={styles.sqlResultLabel}>Результат ({qSql.runResult.rowCount} строк):</p>
+                                    <div className={styles.sqlTableWrap}>
+                                        <table className={styles.sqlTable}>
+                                            <thead>
+                                                <tr>{qSql.runResult.columns.map(c => <th key={c}>{c}</th>)}</tr>
+                                            </thead>
+                                            <tbody>
+                                                {qSql.runResult.rows.map((row, i) => (
+                                                    <tr key={i}>{qSql.runResult.columns.map(c => (
+                                                        <td key={c}>{String(row[c] ?? '')}</td>
+                                                    ))}</tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {qSql.checkError && <p className={styles.sqlError}>{qSql.checkError}</p>}
+
+                            {qSql.checkResult && (
+                                <div className={`${styles.sqlFeedback} ${qSql.checkResult.correct ? styles.sqlCorrect : styles.sqlWrong}`}>
+                                    {qSql.checkResult.correct
+                                        ? '✓ Правильно!'
+                                        : '✗ Результаты не совпадают с эталоном'}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
