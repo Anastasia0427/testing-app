@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { reviewAttempt, gradeAttempt } from '../../api/attempts';
+import { checkAnswer as sandboxCheck } from '../../api/sandbox';
 import styles from './AttemptReview.module.css';
 
 const AttemptReview = () => {
@@ -14,6 +15,7 @@ const AttemptReview = () => {
     const [comments, setComments] = useState({});
     const [saving, setSaving] = useState(false);
     const [savedScore, setSavedScore] = useState(null);
+    const [sqlResults, setSqlResults] = useState({});
 
     useEffect(() => {
         reviewAttempt(attemptId)
@@ -21,6 +23,26 @@ const AttemptReview = () => {
             .catch(() => setError('Не удалось загрузить попытку'))
             .finally(() => setLoading(false));
     }, [attemptId]);
+
+    useEffect(() => {
+        if (!attempt) return;
+        const questions = attempt.assignment?.test?.questions ?? [];
+        const selections = attempt.selections ?? [];
+        const sqlPairs = questions
+            .filter(q => q.type?.type === 'sql_code' && q.reference_sql && q.schema_name)
+            .map(q => ({ q, sel: selections.find(s => s.question_id === q.question_id) }))
+            .filter(({ sel }) => sel?.answer_text?.trim());
+        if (sqlPairs.length === 0) return;
+        Promise.all(
+            sqlPairs.map(({ q, sel }) =>
+                sandboxCheck(sel.answer_text, q.question_id)
+                    .then(res => ({ qid: q.question_id, correct: res.data.correct }))
+                    .catch(() => ({ qid: q.question_id, correct: false }))
+            )
+        ).then(results => {
+            setSqlResults(Object.fromEntries(results.map(r => [r.qid, r.correct])));
+        });
+    }, [attempt]);
 
     if (loading) return <Layout><p style={{ padding: 32 }}>Загрузка...</p></Layout>;
     if (error)   return <Layout><p className="page-error" style={{ margin: 32 }}>{error}</p></Layout>;
@@ -95,6 +117,7 @@ const AttemptReview = () => {
                         const qType = q.type?.type;
                         const isText = qType === 'text';
                         const isMulti = qType === 'multiple_choice';
+                        const isSql  = qType === 'sql_code';
                         const grade = grades[q.question_id];
 
                         let selectedIds = [];
@@ -109,7 +132,7 @@ const AttemptReview = () => {
                                         <span className={styles.qNum}>Вопрос {idx + 1}</span>
                                         <span className={styles.qPts}>{q.points} б.</span>
                                         <span className={styles.qType}>
-                                            {isText ? 'открытый' : isMulti ? 'несколько вариантов' : 'один вариант'}
+                                            {isText ? 'открытый' : isSql ? 'SQL-запрос' : isMulti ? 'несколько вариантов' : 'один вариант'}
                                         </span>
                                     </div>
                                     {isText && (
@@ -134,6 +157,12 @@ const AttemptReview = () => {
                                             </button>
                                         </div>
                                     )}
+                                    {isSql && sqlResults[q.question_id] !== undefined && (
+                                        <span className={sqlResults[q.question_id] ? styles.gradeBtnCorrect : styles.gradeBtnWrong}
+                                              style={{ padding: '4px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500 }}>
+                                            {sqlResults[q.question_id] ? '✓ Верно' : '✗ Неверно'}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <p className={styles.qText}>{q.question_text}</p>
@@ -156,8 +185,17 @@ const AttemptReview = () => {
                                     </>
                                 )}
 
+                                {/* SQL-ответ */}
+                                {isSql && (
+                                    <div className={`${styles.answer} ${sqlResults[q.question_id] === true ? styles.answerCorrect : sqlResults[q.question_id] === false ? styles.answerWrong : ''}`}>
+                                        {sel?.answer_text
+                                            ? <pre className={styles.answerText} style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{sel.answer_text}</pre>
+                                            : <p className={styles.noAnswer}>Ответ не дан</p>}
+                                    </div>
+                                )}
+
                                 {/* варианты */}
-                                {!isText && (
+                                {!isText && !isSql && (
                                     <div className={styles.options}>
                                         {q.options?.map(opt => {
                                             const isSelected = isMulti

@@ -51,7 +51,7 @@ const deleteTest = async (testId, userId) => {
     await test.destroy();
 };
 
-const addQuestion = async (testId, userId, { question_text, question_type, points, options }) => {
+const addQuestion = async (testId, userId, { question_text, question_type, points, options, reference_sql, schema_name }) => {
     const test = await Test.findOne({ where: { test_id: testId, created_by: userId } });
     if (!test) throw new AppError('Тест не найден', 404);
 
@@ -62,10 +62,11 @@ const addQuestion = async (testId, userId, { question_text, question_type, point
         test_id: test.test_id,
         question_text,
         question_type: typeRecord.type_id,
-        points: points || 1
+        points: points || 1,
+        ...(question_type === 'sql_code' ? { reference_sql, schema_name } : {}),
     });
 
-    if (options?.length > 0) {
+    if (question_type !== 'sql_code' && options?.length > 0) {
         await AnswerOption.bulkCreate(
             options.map(opt => ({
                 question_id: question.question_id,

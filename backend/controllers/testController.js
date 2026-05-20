@@ -40,14 +40,14 @@ const deleteTest = async (req, res) => {
 };
 
 const addQuestion = async (req, res) => {
-    const { question_text, question_type, points, options } = req.body;
+    const { question_text, question_type, points, options, reference_sql, schema_name } = req.body;
     if (!question_text || !question_type)
         return res.status(400).json({ error: 'Укажите текст и тип вопроса' });
 
     const question = await testService.addQuestion(
         req.params.id,
         req.user.user_id,
-        { question_text, question_type, points, options }
+        { question_text, question_type, points, options, reference_sql, schema_name }
     );
     res.status(201).json(question);
 };

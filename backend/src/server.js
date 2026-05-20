@@ -3,6 +3,7 @@ const { sequelize, syncDatabase } = require('../models');
 const seedRoles = require('../seeders/roleSeeder');
 const seedQuestionTypes = require('../seeders/questionTypeSeeder');
 const seedDemo = require('../seeders/demoSeeder');
+const seedSqlQuestionBank = require('../seeders/sqlQuestionBankSeeder');
 
 const PORT = process.env.PORT || 3000;
 
@@ -21,6 +22,7 @@ const startServer = async() => {
         try { await seedRoles(); } catch (e) { console.error('seedRoles failed:', e.message); }
         try { await seedQuestionTypes(); } catch (e) { console.error('seedQuestionTypes failed:', e.message); }
         try { await seedDemo(); } catch (e) { console.error('seedDemo failed:', e.message); }
+        try { await seedSqlQuestionBank(); } catch (e) { console.error('seedSqlQuestionBank failed:', e.message); }
 
         // start listening
         app.listen(PORT, '127.0.0.1', () => {

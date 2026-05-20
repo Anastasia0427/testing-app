@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { getTestById, updateTest, addQuestion, deleteQuestion } from '../../api/tests';
+import { getSchemas, runQuery as sandboxRun } from '../../api/sandbox';
+import { getQuestionBank } from '../../api/questionBank';
+import CodeMirror from '@uiw/react-codemirror';
+import { sql } from '@codemirror/lang-sql';
 import styles from './TestForm.module.css';
 
 const SERVER = 'http://localhost:3000';
@@ -10,6 +14,7 @@ const TYPES = [
     { value: 'single_choice',   label: 'Один верный ответ' },
     { value: 'multiple_choice', label: 'Несколько верных ответов' },
     { value: 'text',            label: 'Текстовый ответ' },
+    { value: 'sql_code',        label: 'SQL-запрос' },
 ];
 
 const emptyQuestion = () => ({
@@ -18,6 +23,8 @@ const emptyQuestion = () => ({
     question_text: '',
     points: 1,
     options: [{ text: '', is_correct: false }, { text: '', is_correct: false }],
+    reference_sql: '',
+    schema_name: 'books',
 });
 
 const savedToEditor = (q) => ({
@@ -26,6 +33,8 @@ const savedToEditor = (q) => ({
     question_text: q.question_text,
     points: q.points ?? 1,
     options: (q.options ?? []).map(o => ({ text: o.option_text, is_correct: o.is_correct })),
+    reference_sql: q.reference_sql ?? '',
+    schema_name: q.schema_name ?? 'books',
 });
 
 const EditTest = () => {
@@ -50,6 +59,42 @@ const EditTest = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    const [schemas, setSchemas] = useState([]);
+    const [sqlRunResult, setSqlRunResult] = useState(null);
+    const [sqlRunError, setSqlRunError] = useState('');
+    const [sqlRunning, setSqlRunning] = useState(false);
+
+    const [bankQuestions, setBankQuestions] = useState([]);
+    const [bankLoading, setBankLoading] = useState(false);
+    const [showBankPicker, setShowBankPicker] = useState(false);
+
+    const openBankPicker = () => {
+        setShowBankPicker(true);
+        if (bankQuestions.length === 0) {
+            setBankLoading(true);
+            getQuestionBank()
+                .then(res => setBankQuestions(res.data))
+                .catch(() => {})
+                .finally(() => setBankLoading(false));
+        }
+    };
+
+    const pickBankQuestion = (q) => {
+        setEditing(prev => ({
+            ...prev,
+            question_text: q.question_text || prev.question_text,
+            reference_sql: q.reference_sql,
+            schema_name:   q.schema_name,
+        }));
+        setSqlRunResult(null);
+        setSqlRunError('');
+        setShowBankPicker(false);
+    };
+
+    useEffect(() => {
+        getSchemas().then(res => setSchemas(res.data)).catch(() => {});
+    }, []);
 
     useEffect(() => {
         getTestById(id)
@@ -118,12 +163,34 @@ const EditTest = () => {
     const handleQField = (field, value) => {
         setEditing(prev => {
             const next = { ...prev, [field]: value };
-            if (field === 'type' && value === 'text') next.options = [];
-            if (field === 'type' && value !== 'text' && prev.type === 'text') {
-                next.options = [{ text: '', is_correct: false }, { text: '', is_correct: false }];
+            if (field === 'type') {
+                const isSql     = value === 'sql_code';
+                const wasChoice = prev.type !== 'text' && prev.type !== 'sql_code';
+                if (isSql || value === 'text') next.options = [];
+                if (!isSql && value !== 'text' && !wasChoice)
+                    next.options = [{ text: '', is_correct: false }, { text: '', is_correct: false }];
+                if (isSql && !next.schema_name)
+                    next.schema_name = schemas[0] || 'books';
+                setSqlRunResult(null);
+                setSqlRunError('');
             }
             return next;
         });
+    };
+
+    const handleRunSql = async () => {
+        if (!editing?.reference_sql?.trim() || !editing?.schema_name) return;
+        setSqlRunning(true);
+        setSqlRunResult(null);
+        setSqlRunError('');
+        try {
+            const { data } = await sandboxRun(editing.reference_sql, editing.schema_name);
+            setSqlRunResult(data);
+        } catch (err) {
+            setSqlRunError(err.response?.data?.error || 'Ошибка выполнения');
+        } finally {
+            setSqlRunning(false);
+        }
     };
 
     const handleOptionText = (idx, value) =>
@@ -149,7 +216,10 @@ const EditTest = () => {
     // ── сохранить вопрос ─────────────────────────────────────
     const saveQuestion = () => {
         if (!editing.question_text.trim()) return alert('Введите текст вопроса');
-        if (editing.type !== 'text') {
+        if (editing.type === 'sql_code') {
+            if (!editing.reference_sql?.trim()) return alert('Введите эталонный SQL-запрос');
+            if (!editing.schema_name) return alert('Выберите схему');
+        } else if (editing.type !== 'text') {
             if (editing.options.length < 2) return alert('Добавьте хотя бы 2 варианта ответа');
             if (editing.options.some(o => !o.text.trim())) return alert('Заполните все варианты ответа');
             if (!editing.options.some(o => o.is_correct)) return alert('Отметьте хотя бы один верный ответ');
@@ -203,7 +273,9 @@ const EditTest = () => {
                     question_text: q.question_text,
                     question_type: q.type,
                     points:        q.points,
-                    options:       q.options.map(o => ({ text: o.text, is_correct: o.is_correct })),
+                    ...(q.type === 'sql_code'
+                        ? { reference_sql: q.reference_sql, schema_name: q.schema_name }
+                        : { options: q.options.map(o => ({ text: o.text, is_correct: o.is_correct })) }),
                 });
             }
 
@@ -366,7 +438,7 @@ const EditTest = () => {
                                     placeholder="Введите вопрос..." />
                             </div>
 
-                            {editing.type !== 'text' && (
+                            {editing.type !== 'text' && editing.type !== 'sql_code' && (
                                 <div className={styles.options}>
                                     <label className={styles.optionsLabel}>
                                         Варианты ответа
@@ -402,6 +474,92 @@ const EditTest = () => {
                                         style={{ marginTop: 8, width: 'auto', fontSize: 13 }}>
                                         + Добавить вариант
                                     </button>
+                                </div>
+                            )}
+
+                            {editing.type === 'sql_code' && (
+                                <div className={styles.sqlBlock}>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                                        <button className="btn btn-outline"
+                                            style={{ width: 'auto', fontSize: 12 }}
+                                            onClick={openBankPicker}>
+                                            Выбрать из банка ↓
+                                        </button>
+                                    </div>
+
+                                    {showBankPicker && (
+                                        <div className={styles.bankPicker}>
+                                            {bankLoading && <p className={styles.bankHint}>Загрузка...</p>}
+                                            {!bankLoading && bankQuestions.length === 0 && (
+                                                <p className={styles.bankHint}>Банк пуст</p>
+                                            )}
+                                            {bankQuestions.map(q => (
+                                                <div key={q.sq_id} className={styles.bankItem}
+                                                    onClick={() => pickBankQuestion(q)}>
+                                                    <span className={styles.bankSchema}>{q.schema_name}</span>
+                                                    <div>
+                                                        <p className={styles.bankTitle}>{q.title}</p>
+                                                        <p className={styles.bankText}>{q.question_text?.slice(0, 90)}{q.question_text?.length > 90 ? '…' : ''}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="form-group">
+                                        <label>Схема БД</label>
+                                        <select value={editing.schema_name}
+                                            onChange={e => handleQField('schema_name', e.target.value)}
+                                            style={{ width: 'auto' }}>
+                                            {schemas.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Эталонный SQL *</label>
+                                        <CodeMirror
+                                            value={editing.reference_sql}
+                                            onChange={v => handleQField('reference_sql', v)}
+                                            extensions={[sql()]}
+                                            height="120px"
+                                            basicSetup={{ lineNumbers: true }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                                        <button className="btn btn-outline"
+                                            style={{ width: 'auto', fontSize: 13 }}
+                                            onClick={handleRunSql}
+                                            disabled={sqlRunning}>
+                                            {sqlRunning ? '...' : '▶ Проверить запрос'}
+                                        </button>
+                                        {sqlRunResult && (
+                                            <span style={{ fontSize: 13, color: 'var(--success, green)' }}>
+                                                {sqlRunResult.rowCount} строк
+                                            </span>
+                                        )}
+                                    </div>
+                                    {sqlRunError && (
+                                        <p style={{ color: 'var(--danger, red)', fontSize: 13, margin: '0 0 8px' }}>
+                                            {sqlRunError}
+                                        </p>
+                                    )}
+                                    {sqlRunResult && (
+                                        <div style={{ overflowX: 'auto', maxHeight: 180, fontSize: 13, marginBottom: 8 }}>
+                                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                                                <thead>
+                                                    <tr>{sqlRunResult.columns.map(c => (
+                                                        <th key={c} style={{ border: '1px solid #ddd', padding: '3px 8px', background: '#f5f5f5', whiteSpace: 'nowrap' }}>{c}</th>
+                                                    ))}</tr>
+                                                </thead>
+                                                <tbody>
+                                                    {sqlRunResult.rows.map((row, i) => (
+                                                        <tr key={i}>{sqlRunResult.columns.map(c => (
+                                                            <td key={c} style={{ border: '1px solid #ddd', padding: '3px 8px', whiteSpace: 'nowrap' }}>{String(row[c] ?? '')}</td>
+                                                        ))}</tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

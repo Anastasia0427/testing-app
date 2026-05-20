@@ -10,6 +10,7 @@ const Assignment = require('./Assignment.js');
 const Attempt = require('./Attempt.js');
 const UserSelection = require('./UserSelection.js');
 const Notification = require('./Notification.js');
+const SqlQuestion = require('./SqlQuestion.js');
 
 //===================== ASSOCIATIONS =====================
 
@@ -139,6 +140,10 @@ User.hasMany(Test, {
   });
 
   
+  // User <-> SqlQuestion (One-to-Many)
+  User.hasMany(SqlQuestion, { foreignKey: 'author_id', as: 'sql_questions' });
+  SqlQuestion.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
+
   // User <-> Notification (One-to-Many)
   User.hasMany(Notification, {
     foreignKey: 'user_id',
@@ -174,5 +179,6 @@ User.hasMany(Test, {
     Assignment,
     Attempt,
     UserSelection,
-    Notification
+    Notification,
+    SqlQuestion,
   };

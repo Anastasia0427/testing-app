@@ -1,6 +1,6 @@
 const QuestionType = require('../models/QuestionType');
 
-const types = ['single_choice', 'multiple_choice', 'text'];
+const types = ['single_choice', 'multiple_choice', 'text', 'sql_code'];
 
 const seedQuestionTypes = async () => {
     for (const typeName of types) {

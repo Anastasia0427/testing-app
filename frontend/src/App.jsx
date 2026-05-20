@@ -16,6 +16,8 @@ import CreateTest from './pages/teacher/CreateTest';
 import EditTest from './pages/teacher/EditTest';
 import Assignments from './pages/teacher/Assignments';
 import AttemptReview from './pages/teacher/AttemptReview';
+import QuestionBank from './pages/teacher/QuestionBank';
+import SqlQuestionEditor from './pages/teacher/SqlQuestionEditor';
 
 function App() {
     return (
@@ -59,6 +61,15 @@ function App() {
             } />
             <Route path="/teacher/attempts/:attemptId/review" element={
                 <ProtectedRoute role="teacher"><AttemptReview /></ProtectedRoute>
+            } />
+            <Route path="/teacher/question-bank" element={
+                <ProtectedRoute role="teacher"><QuestionBank /></ProtectedRoute>
+            } />
+            <Route path="/teacher/question-bank/new" element={
+                <ProtectedRoute role="teacher"><SqlQuestionEditor /></ProtectedRoute>
+            } />
+            <Route path="/teacher/question-bank/:id/edit" element={
+                <ProtectedRoute role="teacher"><SqlQuestionEditor /></ProtectedRoute>
             } />
 
             {/* редирект с корня */}
